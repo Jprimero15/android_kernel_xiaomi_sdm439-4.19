@@ -1188,7 +1188,7 @@ static int f2fs_write_compressed_pages(struct compress_ctx *cc,
 		.submitted = false,
 		.io_type = io_type,
 		.io_wbc = wbc,
-		.encrypted = fscrypt_inode_uses_fs_layer_crypto(cc->inode),
+		.encrypted = f2fs_encrypted_file(cc->inode),
 	};
 	struct dnode_of_data dn;
 	struct node_info ni;
@@ -1264,7 +1264,8 @@ static int f2fs_write_compressed_pages(struct compress_ctx *cc,
 			err = f2fs_encrypt_one_page(&fio);
 			if (err)
 				goto out_destroy_crypt;
-			cc->cpages[i] = fio.encrypted_page;
+			if (fscrypt_inode_uses_fs_layer_crypto(inode))
+				cc->cpages[i] = fio.encrypted_page;
 		}
 	}
 
@@ -1303,7 +1304,7 @@ static int f2fs_write_compressed_pages(struct compress_ctx *cc,
 
 		f2fs_bug_on(fio.sbi, blkaddr == NULL_ADDR);
 
-		if (fio.encrypted)
+		if (fio.encrypted && fscrypt_inode_uses_fs_layer_crypto(inode))
 			fio.encrypted_page = cc->cpages[i - 1];
 		else
 			fio.compressed_page = cc->cpages[i - 1];
